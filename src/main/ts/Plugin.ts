@@ -2,7 +2,7 @@ import { Editor, TinyMCE } from "tinymce";
 
 declare const tinymce: TinyMCE;
 
-const setup = (editor: Editor, url: string): void => {
+const setup = (editor: Editor): void => {
   let markup = "";
 
   // custom sigma icon
