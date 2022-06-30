@@ -7,76 +7,44 @@
 
   <title>Equation Editor</title>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
-      }
-    }
-  </script>
+  <script defer src="https://unpkg.com/mathlive"></script>
 </head>
 <body>
   <div id="app">
-    <div id="math-field"></div>
+    <div style="margin: 16px;">
+      <math-field id="mathfield" virtual-keyboard-mode="onfocus"></math-field>
+    </div>
   </div>
 
-  <script type="module">
-    import { createApp } from 'vue';
-    import { convertLatexToMarkup, MathfieldElement } from 'https://unpkg.com/mathlive?module';
+  <script type="text/javascript">
+    let mathfield = null;
 
-    createApp({
-      data() {
-        return {
-          latex: '',
-          mathfieldElement: null,
-        }
-      },
-      created() {
-        if (window.addEventListener) {
-          window.addEventListener('message', this.receiveMessage, false);
-        } else {
-          window.attachEvent('onmessage', this.receiveMessage);
-        }
-      },
-      mounted() {
+    window.addEventListener('load', () => {
+      mathfield = document.getElementById('mathfield');
+      mathfield.focus();
+      window.parent.postMessage({
+        mceAction: 'mathlive-load',
+      }, '*');
+    });
+
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+
+      const mathfield = document.getElementById('mathfield');
+      mathfield.focus();
+      mathfield.setAttribute('virtual-keyboard-mode', 'onfocus');
+
+      mathfield.addEventListener('input', (event) => {
+        const latex = event.target.value;
+        const html = MathLive.convertLatexToMarkup(latex);
+
         window.parent.postMessage({
-          mceAction: "mathlive-mounted",
-          status: true,
-        }, "*");
-      },
-      methods: {
-        initMathfieldElement() {
-          this.mathfieldElement = new MathfieldElement({
-            defaultMode: 'math',
-            letterShapeStyle: 'tex',
-            virtualKeyboardMode: 'onfocus',
-          });
-
-          this.mathfieldElement.style.padding = '8px';
-          this.mathfieldElement.style.borderRadius = '8px';
-          this.mathfieldElement.style.border = '1px solid rgba(0, 0, 0, .3)';
-
-          this.mathfieldElement.addEventListener('input', (event) => {
-            this.latex = event.target.value;
-            this.sendMessage();
-          });
-
-          document.getElementById("math-field").appendChild(this.mathfieldElement);
-        },
-        receiveMessage(event) {
-          const data = event.data;
-          this.latex = data.latex;
-          this.initMathfieldElement();
-        },
-        sendMessage() {
-          window.parent.postMessage({
-            mceAction: "mathlive-input",
-            latex: this.latex,
-            html: convertLatexToMarkup(this.latex),
-          }, "*");
-        },
-      },
-    }).mount('#app')
+          mceAction: 'mathlive-input',
+          latex,
+          html,
+        }, '*');
+      });
+    });
   </script>
 </body>
 </html>
